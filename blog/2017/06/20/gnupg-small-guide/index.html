@@ -9,7 +9,7 @@
   <meta name="author" content="Lucas A. Aguiar">
 
   
-  <meta name="description" content="GnuPG, or Gnu Privacy Guard, is a software that implements the standart OpenPGP &ndash; in which PGP stands for Pretty Good Privacy. It is a tool &hellip;">
+  <meta name="description" content="GnuPG, or Gnu Privacy Guard, is a software that implements the OpenPGP standard &ndash; in which PGP stands for Pretty Good Privacy. It is a tool &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="https://lucastamoios.github.io/blog/2019/05/23/gnupg-small-guide/">
+  <link rel="canonical" href="http://lucastamoios.github.io/blog/2017/06/20/gnupg-small-guide/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="Lucas' Blog" type="application/atom+xml">
@@ -77,85 +77,89 @@
 
 
 
-<time class='entry-date' datetime='2019-05-23T10:01:48-03:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>23</span><span class='date-suffix'>rd</span>, <span class='date-year'>2019</span></span> <span class='time'>10:01 am</span></time>
+<time class='entry-date' datetime='2017-06-20T10:01:48-03:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>10:01 am</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>GnuPG, or Gnu Privacy Guard, is a software that implements the standart OpenPGP &ndash; in which PGP stands for Pretty Good Privacy.</p>
+<div class="entry-content"><p>GnuPG, or Gnu Privacy Guard, is a software that implements the OpenPGP standard &ndash; in which PGP stands for Pretty Good Privacy.</p>
 
-<p>It is a tool used for &ndash; crash the drums &ndash; privacy. By privacy you should understand sending private messages between users, to store any data safely, being sure that a message has a given origin, and others.</p>
+<p>It is a tool used for &ndash; crash the drums &ndash; privacy. By privacy, you should understand sending private messages between users, to store any data safely, being sure that a message has a given origin and others.</p>
 
-<p>For those who think that privacy is a waste of time, stuff for paranoid tech guys, I suggest to read <a href="https://workplace.stackexchange.com/questions/91643/someone-forged-my-resignation-letter">this post</a> in Stack Exchange.</p>
+<p>For those who think that privacy is a waste of time, stuff for paranoid tech guys, I suggest reading <a href="https://workplace.stackexchange.com/questions/91643/someone-forged-my-resignation-letter">this post</a> in Stack Exchange.</p>
 
-<p>Although we live in a free era, the freedom is sometimes menaced by dictatorships and state surveillance, and we do not know when these privacy knowledge will go from &ldquo;nice to have&rdquo; to a &ldquo;must have&rdquo;.</p>
+<p>Although we live in a free era, the freedom is sometimes menaced by dictatorships and state surveillance and we do not know when these privacy knowledge will go from &ldquo;nice to have&rdquo; to a &ldquo;must have&rdquo;.</p>
 
-<p>PGP was created in 1991 by Phil Zimmermann, in order to securely store messages and files, and no license was required for its non commercial use. In 1997 it was proposed as a standard in the IETF, and thus emerged OpenPGP.</p>
+<p>PGP was created in 1991 by Phil Zimmermann, in order to securely store messages and files, and no license was required for its non-commercial use. In 1997 it was proposed as a standard in the IETF, and thus emerged OpenPGP.</p>
 
 <h2>Uses for the GPG</h2>
 
 <p>GPG have some nice features, some used more frequently, others not so:</p>
 
 <ul>
-<li><em>Signing and verifing a commit</em>: With this you can always know the owner of a commit, as well as let the others be sure you wrote some piece of code. The <a href="https://mikegerwitz.com/papers/git-horror-story">Git Horror Story</a> is a tale that try to instill the sense for sign/verify commits into the greenhorn programmers. Besides it all, there are <a href="http://git.661346.n2.nabble.com/GPG-signing-for-git-commit-td2582986.html">some people</a> that have its own issues with commit signatures.</li>
-<li><em>Send and receive cryptographed messages</em>: Remember when as a kid you created encoded messages and tought no one would never understand¹? Well, bad news, <strong>everyone</strong> could read them. But now you can create messages that no one will understand², for real.</li>
+<li><em>Signing and verifying a commit</em>: With this, you can always know the owner of a commit, as well as let the others be sure you wrote some piece of code. The <a href="https://mikegerwitz.com/papers/git-horror-story">Git Horror Story</a> is a tale that tries to instill the sense for sign/verify commits into the greenhorn programmers. Besides it all, there are <a href="http://git.661346.n2.nabble.com/GPG-signing-for-git-commit-td2582986.html">some people</a> that have its own issues with commit signatures.</li>
+<li><em>Send and receive cryptographed messages</em>: Remember when as a kid you created encoded messages and thought no one would never understand¹? Well, bad news, <strong>everyone</strong> could read them. But now you can create messages that no one will understand², for real.</li>
 <li><em>Checking signatures</em>: It is possible to know (with a great confidence degree) that some file is from someone specific. For instance, consider <a href="https://www.torproject.org/download/download">downloading Tor</a>, it is a secure browser, but if you download a hacked software, it will serve for the exact contrary of its purpose. But calm down, no need to cry, with GPG you can check the integrity of any software.</li>
 </ul>
 
 
 <p>Come with us to learn cool stuff!</p>
 
-<p>¹ No? Oh&hellip; sorry for your childhood. :&lsquo;(<br/>
+<p>¹ No? Oh&hellip; sorry for your childhood. :&lsquo;(
 ² Maybe it is possible to <a href="https://www.quora.com/How-long-would-it-take-to-crack-a-RSA-4096bit-GPG-PGP-Encryption-Private-Key">break a 4096 RSA encryption</a>.</p>
 
 <h2>Creating your key</h2>
 
 <p>First of all, you must <a href="https://www.gnupg.org/download/index.html">download and install</a> the GPG tools. Then you can check the installation with</p>
 
-<pre><code>$ gpg --version
+<pre><code>&gt; gpg --version
 gpg (GnuPG) 1.4.20
 License GPLv3+: GNU GPL version 3 or later [...]
 </code></pre>
 
 <p>The next step is to create a key for your use, which is very easy! The step-by-step can be seen <a href="https://www.gnupg.org/gph/en/manual/c14.html#AEN25">here</a> or <a href="http://ekaia.org/blog/2009/05/10/creating-new-gpgkey/">here</a>. Briefly, it is</p>
 
-<pre><code>$ gpg --gen-key
+<pre><code>&gt; gpg --gen-key
 </code></pre>
 
-<p>And some things you must pay attention during the creation of the key:
-- I would rather choose RSA kind of key. I suggest you to <a href="https://security.stackexchange.com/questions/5096/rsa-vs-dsa-for-ssh-authentication-keys">read this</a> to understand why.
-- Be sure to choose the maximum bit lenght for your key, if you want it to be safer. At the time this article is being written, the maximum is 4096.
-- It is nice to set an expiration date. It must happen to you to lost your key, or die (as we all some day), and then is a good practice to let others know that key is not being used anymore.
-- Avoid comments on your key, as it is redundant at almost every time.
-- It is nice to use strong digest algos like SHA512. I suggest you to understand and create a nice <a href="https://raw.githubusercontent.com/ioerror/duraconf/master/configs/gnupg/gpg.conf"><code>gpg.conf</code></a> to assure you are using the best configuration.</p>
+<p>And some things you must pay attention to the creation of the key:</p>
+
+<ul>
+<li>I would rather choose RSA kind of key. I suggest you to <a href="https://security.stackexchange.com/questions/5096/rsa-vs-dsa-for-ssh-authentication-keys">read this</a> to understand why.</li>
+<li>Be sure to choose the maximum bit length for your key, if you want it to be safer. At the time this article is being written, the maximum is 4096.</li>
+<li>It is nice to set an expiration date. It must happen to you to lose your key or die (as we all some day) and then is a good practice to let others know that key is not being used anymore.</li>
+<li>Avoid comments on your key, as it is redundant at almost every time.</li>
+<li>It is nice to use strong digest algos like SHA512. I suggest you understand and create a nice <a href="https://raw.githubusercontent.com/ioerror/duraconf/master/configs/gnupg/gpg.conf"><code>gpg.conf</code></a> to assure you are using the best configuration.</li>
+</ul>
+
 
 <p><a href="https://riseup.net/ru/security/message-security/openpgp/best-practices">Here</a> you can find a lot of other good practices for your GPG day-to-day use.</p>
 
 <p>Assuming you finished the creation of your key, you can check it all with</p>
 
-<pre><code>$ gpg --list-keys
+<pre><code>&gt; gpg --list-keys
 pub   4096R/746F8A65 2017-05-24 [expires: 2018-05-24]
       Key fingerprint = 014C F6E9 C2E0 12A2 4187  F108 178A C6CD 746F 8A65
       uid                  Lucas Almeida Aguiar &lt;lucas.tamoios@gmail.com&gt;
       sub   4096R/AFC85A01 2017-05-24 [expires: 2018-05-24]
 </code></pre>
 
-<p>As a brief summary, <strong>pub</strong> stands for public key, then you have the key lenght (4096 bits) with the R from RSA, a slash and the short fingerprint, then the creation and expiration date. The short fingerprint takes the last 8 digits from your actual fingerprint. The <strong>uid</strong> is what you wrote few minutes ago, when I told you to do not write a comment. Let&rsquo;s talk about the subs later.</p>
+<p>As a brief summary, <strong>pub</strong> stands for &ldquo;public&rdquo; key, then you have the key length (4096 bits) with the R from RSA, a slash, and the short fingerprint, then the creation and expiration date. The short fingerprint takes the last 8 digits from your actual fingerprint. The <strong>uid</strong> is what you wrote a few minutes ago when I told you to do not write a comment. Let&rsquo;s talk about the subs later.</p>
 
-<p>For now, <strong>pay attention</strong>: the uid is not enough for you to believe someone is who he/she is telling you he/she is. Anyone can create a key with any name or e-mail. To be sure someone is really who he/she is telling you, you must check its <strong>fingerprint</strong>. We will cover it deeper when discussing about web of trust.</p>
+<p>For now, <strong>pay attention</strong>: the uid is not enough for you to believe someone is who he/she is telling you he/she is. Anyone can create a key with any name or e-mail. To be sure someone is really who he/she is telling you, you must check its <strong>fingerprint</strong>. We will cover it deeper when discussing web of trust.</p>
 
 <h2>Working with keys</h2>
 
-<p>Generally you have not only your keys, but also other people&rsquo;s public keys, that you use to verify signatures and to send them encoded stuff. You have the power to edit your key and change how you see the other&rsquo;s keys with</p>
+<p>Generally, you have not only your keys but also other people&rsquo;s public keys, that you use to verify signatures and to send them encoded stuff. You have the power to edit your key and change how you see the other&rsquo;s keys with</p>
 
-<pre><code>$ gpg --edit-keys 746F8A65
+<pre><code>&gt; gpg --edit-keys 746F8A65
 </code></pre>
 
 <p>This hash in front of the command is just the short fingerprint of the uuid you want to edit.</p>
 
-<pre><code>$ gpg --edit-keys 746F8A65
+<pre><code>&gt; gpg --edit-keys 746F8A65
 gpg (GnuPG) 1.4.20; Copyright (C) 2015 Free Software Foundation, Inc.
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
@@ -174,7 +178,7 @@ sub  4096R/B2CD6DC9  created: 2017-05-24  expires: 2018-05-24  usage: S
 - <strong>E</strong> for <strong>e</strong>ncrypt
 - <strong>C</strong> for <strong>c</strong>ertify</p>
 
-<p>The certify usage is the most powerful of them, because it can create, trust and revoke keys.</p>
+<p>The certify usage is the most powerful of them because it can create, trust and revoke keys.</p>
 
 <p>The <code>gpg --edit-keys</code> allows you to change passwords, trust keys, sign keys, change expire date, <a href="https://www.gnupg.org/gph/en/manual/r899.html">and other</a>.</p>
 
@@ -192,22 +196,20 @@ sub  4096R/B2CD6DC9  created: 2017-05-24  expires: 2018-05-24  usage: S
 </ul>
 
 
-<p>To trust someone you must first import a key. You can import the raw file with the public key with</p>
+<p>To trust someone you must first import a key. You can import the raw file with
+the public key with</p>
 
-<pre><code>$ gpg --import john_doe.asc
+<pre><code>&gt; gpg --import john_doe.asc
 </code></pre>
 
 <p>or download it from a keyserver</p>
 
-<pre><code>$ gpg --keyserver hkp://pgp.mit.edu --search-keys "john_doe@example.com"
+<pre><code>&gt; gpg --keyserver hkp://pgp.mit.edu --search-keys "john_doe@example.com"
 </code></pre>
 
 <p>Then when you <code>--list-keys</code>, the key you imported should be there.</p>
 
-<blockquote><p>Trusting keys is a serious issue. If you start to trust everyone, without
-checking, you will probably end up being yourself trusted as &ldquo;Never&rdquo;. I recommend you
-to only trust keys when you are sure it belongs to its owner, and checked with
-him the key&rsquo;s fingerprint.</p></blockquote>
+<blockquote><p>Trusting keys is a serious issue. If you start to trust everyone, without checking, you will probably end up being yourself trusted as &ldquo;Never&rdquo;. I recommend you to only trust keys when you are sure it belongs to its owner, and checked with him the key&rsquo;s fingerprint.</p></blockquote>
 
 <p>Check the fingerprint of the key you want to trust</p>
 
@@ -226,11 +228,12 @@ pub  4096R/930F2A9E  created: 2017-06-20 expires: 2018-06-20 usage: SC
 gpg&gt; trust
 </code></pre>
 
-<p>Then you must set the trust level, according with the list described above. See <a href="https://www.gnupg.org/gph/en/manual/x334.html">here</a> with more details.</p>
+<p>Then you must set the trust level, according to the list described above. See <a href="https://www.gnupg.org/gph/en/manual/x334.html">here</a> with more details.</p>
 
 <h2>Conclusion</h2>
 
-<p>The aim of this post was to give an overview about GPG, since the links I put here can serve as a bootstrap to further learnings.</p>
+<p>The aim of this post was to give an overview about GPG, since the links I put
+here can serve as a bootstrap to further learnings.</p>
 </div>
 
 
@@ -246,7 +249,7 @@ gpg&gt; trust
 
 
 
-<time class='entry-date' datetime='2019-05-23T10:01:48-03:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>23</span><span class='date-suffix'>rd</span>, <span class='date-year'>2019</span></span> <span class='time'>10:01 am</span></time>
+<time class='entry-date' datetime='2017-06-20T10:01:48-03:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>10:01 am</span></time>
       
 
 
@@ -254,7 +257,7 @@ gpg&gt; trust
     
       <div class="sharing">
   
-  <a href="//twitter.com/share" class="twitter-share-button" data-url="https://lucastamoios.github.io/blog/2019/05/23/gnupg-small-guide/" data-via="" data-counturl="https://lucastamoios.github.io/blog/2019/05/23/gnupg-small-guide/" >Tweet</a>
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://lucastamoios.github.io/blog/2017/06/20/gnupg-small-guide/" data-via="" data-counturl="http://lucastamoios.github.io/blog/2017/06/20/gnupg-small-guide/" >Tweet</a>
   
   
   
@@ -263,6 +266,10 @@ gpg&gt; trust
     
     <p class="meta">
       
+        <a class="basic-alignment left" href="/blog/2017/05/30/linux-asynchronous-i-slash-o/" title="Previous Post: Linux Asynchronous I/O">&laquo; Linux Asynchronous I/O</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2018/03/07/understanding-private-proxies-for-crawling/" title="Next Post: Understanding private proxies for crawling">Understanding private proxies for crawling &raquo;</a>
       
     </p>
   </footer>
@@ -283,7 +290,19 @@ gpg&gt; trust
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2019/05/23/gnupg-small-guide/">GnuPG Small Guide</a>
+        <a href="/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/">Building a Chat From Scratch With Go and MQTT</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2018/03/07/understanding-private-proxies-for-crawling/">Understanding Private Proxies for Crawling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/06/20/gnupg-small-guide/">GnuPG Small Guide</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/05/30/linux-asynchronous-i-slash-o/">Linux Asynchronous I/O</a>
       </li>
     
   </ul>
@@ -341,8 +360,8 @@ gpg&gt; trust
       
         
         // var disqus_developer = 1;
-        var disqus_identifier = 'https://lucastamoios.github.io/blog/2019/05/23/gnupg-small-guide/';
-        var disqus_url = 'https://lucastamoios.github.io/blog/2019/05/23/gnupg-small-guide/';
+        var disqus_identifier = 'http://lucastamoios.github.io/blog/2017/06/20/gnupg-small-guide/';
+        var disqus_url = 'http://lucastamoios.github.io/blog/2017/06/20/gnupg-small-guide/';
         var disqus_script = 'embed.js';
       
     (function () {

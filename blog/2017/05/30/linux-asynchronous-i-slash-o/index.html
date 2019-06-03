@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Linux Asynchronous I/O - Lucas' Blog</title>
+  <meta name="author" content="Lucas A. Aguiar">
+
+  
+  <meta name="description" content="Disclaimer: This post is a compilation of my study notes and I am not an expert on this subject (yet). I put the sources linked for a deeper &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://lucastamoios.github.io/blog/2017/05/30/linux-asynchronous-i-slash-o/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Lucas' Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Lucas' Blog</a></h1>
+  
+    <h2>cat /dev/thoughts</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="lucastamoios.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Linux Asynchronous I/O</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2017-05-30T09:24:45-03:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>9:24 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><blockquote><p>Disclaimer: This post is a compilation of my study notes and I am not an expert on this subject (yet). I put the sources linked for a deeper understanding.</p></blockquote>
+
+<p>When we talk about asynchronous tasks what comes to our minds is almost always a task running in a separated thread. But, as I will clear below, this task usually is blocking, and not async at all.</p>
+
+<p>Another <a href="https://stackoverflow.com/questions/2625493/asynchronous-vs-non-blocking">interesting misunderstanding</a> occurs between nonblocking and asynchronous (or blocking and synchronous as well), and people use to think these pair of words are always interchangeable. We will discuss <a href="#the-confusion">below</a> why this is wrong.</p>
+
+<h2>The models</h2>
+
+<p>So here we will discuss the 04 available I/O models under Linux, they are:</p>
+
+<ul>
+<li>blocking I/O</li>
+<li>nonblocking I/O</li>
+<li>I/O multiplexing</li>
+<li>asynchronous I/O</li>
+</ul>
+
+
+<h3>Blocking I/O</h3>
+
+<p>The most common way to get information from a file descriptor is a synchronous and blocking I/O. It sends a request and waits until data is copied from the kernel to the user.</p>
+
+<p>An easy way to implement multitasking is to create various threads, each one with blocking requests.</p>
+
+<h3>Non-blocking I/O</h3>
+
+<p>This is a <strong>synchronous</strong> and non-blocking way to get data.</p>
+
+<p>When a device is open with the option <code>O_NONBLOCK</code>, any unsuccessful try to read it return an exception <code>EWOULDBLOCK</code> or <code>EAGAIN</code>. The application then retries to read the data until the file descriptor is ready for reading.</p>
+
+<p>This method is very wasteful and maybe that&rsquo;s the reason to be rarely used.</p>
+
+<h3>I/O multiplexing or select/poll</h3>
+
+<p>This method is an <strong>asynchronous and blocking</strong> way to get data.</p>
+
+<p>The multiplexing, in POSIX, is done with the functions <code>select()</code> and <code>poll()</code>, that registers one or more file descriptors to be read, and then blocks the thread. As been as the file becomes available, the select returns and is possible to copy the data from the kernel to the user.</p>
+
+<p>I/O multiplexing is almost the same as the blocking I/O, with the difference that is possible to wait for multiple file descriptors to be ready at a time.</p>
+
+<h3>Asynchronous I/O</h3>
+
+<p>This one is the method that is, at the same time, <strong>asynchronous</strong> and <strong>non-blocking</strong>.</p>
+
+<p>The async functions tell the kernel to do all the job and report only when the entire message is ready in the kernel for the user (or already in the user space).</p>
+
+<p>There are two asynchronous models:</p>
+
+<ul>
+<li>The all asynchronous model, that the POSIX functions that begin with <code>aio_</code> or <code>lio_</code>;</li>
+<li>The signal-driven model, that uses <code>SIGIO</code> to signal when the file descriptor is ready.</li>
+</ul>
+
+
+<p>One of the main difference between these two is that the first copy data from kernel to the user, while the seconds let the user do that.</p>
+
+<h2>The confusion</h2>
+
+<p>The <a href="http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html">POSIX</a> states that</p>
+
+<blockquote><p>Asynchronous I/O Operation is an I/O operation that does not of itself cause the thread requesting the I/O to be blocked from further use of the processor. This implies that the process and the I/O operation may be running concurrently.</p></blockquote>
+
+<p>So the third and fourth models are, really, asynchronous. The third being blocker, since after the register of the functions it waits for the FDs.</p>
+
+<p>I believe that there is almost always space to a discussion when it comes to the use of any terms. But only the fact that <em>there is</em> divergence whether blocking I/O and synchronous I/O are the same thing shows us that we have to be cautious when we use these terms.</p>
+
+<p>To finish, an image worths a thousand of words, and a table even more, so let us look at this:</p>
+
+<blockquote><p><a href="//imgur.com/3ZXbQ1d"></a></p></blockquote>
+
+<h2>Further words</h2>
+
+<p>When dealing with asynchronous file descriptors, it is important to make account of how many of them the application can handle open at a time. This is easily checked with</p>
+
+<pre><code>$ cat /proc/sys/fs/file-max
+</code></pre>
+
+<p>Be sure to check it to the right user.</p>
+
+<h2>Other References</h2>
+
+<p><a href="https://notes.shichao.io/unp/ch6">I/O Multiplexing</a>, <em>by shichao</em><br/>
+<a href="https://www.ibm.com/developerworks/library/l-async/">Boost application performance using asynchronous I/O</a>, <em>by M. Jones</em><br/>
+<a href="http://davmac.org/davpage/linux/async-io.html">Asynchronous I/O and event notification on linux</a><br/>
+<a href="http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html">The Open Group Base Specifications Issue 7</a>, <em>by The IEEE and The Open Group</em></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Lucas A. Aguiar</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2017-05-30T09:24:45-03:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>9:24 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://lucastamoios.github.io/blog/2017/05/30/linux-asynchronous-i-slash-o/" data-via="" data-counturl="http://lucastamoios.github.io/blog/2017/05/30/linux-asynchronous-i-slash-o/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+      
+        <a class="basic-alignment right" href="/blog/2017/06/20/gnupg-small-guide/" title="Next Post: GnuPG small guide">GnuPG small guide &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/">Building a Chat From Scratch With Go and MQTT</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2018/03/07/understanding-private-proxies-for-crawling/">Understanding Private Proxies for Crawling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/06/20/gnupg-small-guide/">GnuPG Small Guide</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/05/30/linux-asynchronous-i-slash-o/">Linux Asynchronous I/O</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/lucastamoios">@lucastamoios</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'lucastamoios',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2019 - Lucas A. Aguiar -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'lucastamoios';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://lucastamoios.github.io/blog/2017/05/30/linux-asynchronous-i-slash-o/';
+        var disqus_url = 'http://lucastamoios.github.io/blog/2017/05/30/linux-asynchronous-i-slash-o/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

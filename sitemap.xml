@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>https://lucastamoios.github.io/blog/2019/05/23/gnupg-small-guide/</loc>
-<lastmod>2019-05-23T10:01:48-03:00</lastmod>
+<loc>http://lucastamoios.github.io/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/</loc>
+<lastmod>2019-06-02T12:27:12-03:00</lastmod>
 </url>
 <url>
-<loc>https://lucastamoios.github.io/blog/archives/</loc>
+<loc>http://lucastamoios.github.io/blog/2018/03/07/understanding-private-proxies-for-crawling/</loc>
+<lastmod>2018-03-07T09:00:02-03:00</lastmod>
 </url>
 <url>
-<loc>https://lucastamoios.github.io/</loc>
+<loc>http://lucastamoios.github.io/blog/2017/06/20/gnupg-small-guide/</loc>
+<lastmod>2017-06-20T10:01:48-03:00</lastmod>
+</url>
+<url>
+<loc>http://lucastamoios.github.io/blog/2017/05/30/linux-asynchronous-i-slash-o/</loc>
+<lastmod>2017-05-30T09:24:45-03:00</lastmod>
+</url>
+<url>
+<loc>http://lucastamoios.github.io/blog/archives/</loc>
+</url>
+<url>
+<loc>http://lucastamoios.github.io/</loc>
 </url>
 </urlset>

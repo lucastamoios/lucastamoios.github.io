@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Lucas' Blog]]></title>
-  <link href="https://lucastamoios.github.io/atom.xml" rel="self"/>
-  <link href="https://lucastamoios.github.io/"/>
-  <updated>2019-05-23T10:12:08-03:00</updated>
-  <id>https://lucastamoios.github.io/</id>
+  <link href="http://lucastamoios.github.io/atom.xml" rel="self"/>
+  <link href="http://lucastamoios.github.io/"/>
+  <updated>2019-06-03T09:25:49-03:00</updated>
+  <id>http://lucastamoios.github.io/</id>
   <author>
     <name><![CDATA[Lucas A. Aguiar]]></name>
     
@@ -14,82 +14,403 @@
 
   
   <entry>
+    <title type="html"><![CDATA[Building a Chat From Scratch With Go and MQTT]]></title>
+    <link href="http://lucastamoios.github.io/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/"/>
+    <updated>2019-06-02T12:27:12-03:00</updated>
+    <id>http://lucastamoios.github.io/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt</id>
+    <content type="html"><![CDATA[<p>Recently I started learning Go and about Messaging Protocols, and as I think that is easier to learn something while also putting it into practice, I made a very basic chat that I want to share with you.</p>
+
+<p>The Go documentation is, at the same time, complete and scarce. Every package has its own GoDocs, but sometimes with very little explanation, then I needed to dig further to understand better the <a href="https://godoc.org/github.com/eclipse/paho.mqtt.golang">MQTT Go Library</a>. So I thought I could make a blog post in order to share what I learned and expand the community&rsquo;s material.</p>
+
+<p>For this tutorial, I used the Go language, the <a href="https://github.com/eclipse/paho.mqtt.python">Go package for MQTT protocol</a>, RabbitMQ and its <a href="https://rabbitmq.com/mqtt.html">MQTT plugin</a>; and the code was inspired in <a href="https://www.cloudmqtt.com/docs/go.html">this example</a>.</p>
+
+<h2>What about all those MQs?</h2>
+
+<p>Beforehand I need to explain the difference between the broker and the protocols. There are <a href="https://blogs.vmware.com/vfabric/2013/02/choosing-your-messaging-protocol-amqp-mqtt-or-stomp.html">three main messaging protocols</a>: AMQP, MQTT, and STOMP. Each of these has their pros and cons, and situations in with one of them is a better choice.</p>
+
+<p>Then there is the also the brokers, like RabbitMQ, <a href="https://mosquitto.org/">Mosquitto</a>, <a href="https://nsq.io/">NSQ</a> and <a href="http://zeromq.org/">ZeroMQ</a>. The brokers are programs that may implement one or more messaging protocols and are used in order to pass the message between the publisher and the subscriber (we will understand better these names below).</p>
+
+<p>In this tutorial, I used MQTT v3.1.1 with RabbitMQ. I also played with AMPQ but found MQTT much easier and interesting, especially its use cases (IoT).</p>
+
+<h2>The setup</h2>
+
+<p>First I had to <a href="https://golang.org/doc/install">install Go</a>, then I installed RabbitMQ with</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>sudo apt-get install rabbitmq-server
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>and install these two Go libraries</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>go get github.com/akamensky/argparse
+</span><span class='line'>go get github.com/eclipse/paho.mqtt.golang
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Then I just enabled the MQTT plugin on the RabbitMQ and adjusted two users (<code>user1</code> and <code>user2</code>, in with user and password are the same)</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>sudo rabbitmq-plugins <span class="nb">enable </span>rabbitmq_mqtt
+</span><span class='line'>rabbitmqctl add_user user1 user1
+</span><span class='line'>rabbitmqctl add_user user2 user2
+</span><span class='line'>rabbitmqctl set_permissions -p / user1 <span class="s2">&quot;.*&quot;</span> <span class="s2">&quot;.*&quot;</span> <span class="s2">&quot;.*&quot;</span>
+</span><span class='line'>rabbitmqctl set_permissions -p / user2 <span class="s2">&quot;.*&quot;</span> <span class="s2">&quot;.*&quot;</span> <span class="s2">&quot;.*&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>The code</h2>
+
+<p>The main loop first gets user and password from the input arguments and assemble the full URL service:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">func</span> <span class="nx">main</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">user</span><span class="p">,</span> <span class="nx">passwd</span> <span class="o">:=</span> <span class="nx">parseUserArgs</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">fullUrl</span> <span class="o">:=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;mqtt://%s:%s@localhost:1883/test&quot;</span><span class="p">,</span> <span class="nx">user</span><span class="p">,</span> <span class="nx">passwd</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">uri</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">url</span><span class="p">.</span><span class="nx">Parse</span><span class="p">(</span><span class="nx">fullUrl</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">failOnError</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="s">&quot;Failed to parse given URL&quot;</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">forever</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">bool</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">go</span> <span class="nx">listen</span><span class="p">(</span><span class="nx">uri</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">go</span> <span class="nx">poolMessage</span><span class="p">(</span><span class="nx">uri</span><span class="p">,</span> <span class="nx">user</span><span class="p">)</span>
+</span><span class='line'>    <span class="o">&lt;-</span><span class="nx">forever</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Then a channel is created in order to keep the program running and two goroutines are created: one to listen to the messages from the broker (the subscriber), and other to get the message from the output and send it to the broker (the producer).</p>
+
+<p><strong>The consumer</strong> is very simple, it creates a client, connected to the given URI, and, every time it receives a message, it calls the callback function and prints it on the screen:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">func</span> <span class="nx">showMessage</span><span class="p">(</span><span class="nx">client</span> <span class="nx">mqtt</span><span class="p">.</span><span class="nx">Client</span><span class="p">,</span> <span class="nx">msg</span> <span class="nx">mqtt</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">fmt</span><span class="p">.</span><span class="nx">Printf</span><span class="p">(</span><span class="s">&quot;* %s\n&quot;</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">msg</span><span class="p">.</span><span class="nx">Payload</span><span class="p">()))</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">func</span> <span class="nx">listen</span><span class="p">(</span><span class="nx">uri</span> <span class="o">*</span><span class="nx">url</span><span class="p">.</span><span class="nx">URL</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">client</span> <span class="o">:=</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">uri</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">client</span><span class="p">.</span><span class="nx">Subscribe</span><span class="p">(</span><span class="nx">parseTopic</span><span class="p">(</span><span class="nx">uri</span><span class="p">),</span> <span class="nx">QOS_AT_MOST_ONCE</span><span class="p">,</span> <span class="nx">showMessage</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The first parameter of <code>Subscribe</code> is the topic, that is like the channel we are listening to. Topics are very interesting, and can even have a hierarchy that turns easier to broadcast messages and share specific rules. More about topics can be read <a href="https://www.hivemq.com/blog/mqtt-essentials-part-5-mqtt-topics-best-practices/">here</a>. The topic we are using here is the path of our URI, <code>test</code>.</p>
+
+<p>The second argument is about the Quality of Service, or the level of confidence we can trust our message will be delivered. There are three levels:</p>
+
+<ul>
+<li><strong>At most once (0)</strong>: The level we used in our chat, also know as <em>Fire-and-Forget</em>. It sends a message and doesn&rsquo;t wait for any kind of confirmation. Thus, messages will be delivered once or none;</li>
+<li><strong>At least once (1)</strong>: The message will be delivered and, after a while, if no response is returned, it will be sent again. Thus, messages will be delivered one or more times;</li>
+<li><strong>Exactly once (2)</strong>: This is the slowest QoS because it has a four part handshake, that assures the message will be delivered once, no more or less.</li>
+</ul>
+
+
+<p>The third argument is the callback function, in this case, the <code>showMessage</code>, which is called with the client and the message to be printed.</p>
+
+<p><strong>The producer</strong>, at its turn, waits until a message is typed and then sends it to the broker, it is the <code>poolMessage</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">func</span> <span class="nx">sendMessage</span><span class="p">(</span><span class="nx">msg</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">uri</span> <span class="o">*</span><span class="nx">url</span><span class="p">.</span><span class="nx">URL</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">client</span> <span class="o">:=</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">uri</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">RETAIN_MESSAGE</span> <span class="o">:=</span> <span class="kc">false</span>
+</span><span class='line'>    <span class="nx">client</span><span class="p">.</span><span class="nx">Publish</span><span class="p">(</span><span class="nx">parseTopic</span><span class="p">(</span><span class="nx">uri</span><span class="p">),</span> <span class="nx">QOS_AT_MOST_ONCE</span><span class="p">,</span> <span class="nx">RETAIN_MESSAGE</span><span class="p">,</span> <span class="nx">msg</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">func</span> <span class="nx">poolMessage</span><span class="p">(</span><span class="nx">uri</span> <span class="o">*</span><span class="nx">url</span><span class="p">.</span><span class="nx">URL</span><span class="p">,</span> <span class="nx">user</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">for</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">r</span> <span class="o">:=</span> <span class="nx">bufio</span><span class="p">.</span><span class="nx">NewReader</span><span class="p">(</span><span class="nx">os</span><span class="p">.</span><span class="nx">Stdin</span><span class="p">)</span>
+</span><span class='line'>        <span class="nx">msg</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">ReadString</span><span class="p">(</span><span class="sc">&#39;\n&#39;</span><span class="p">)</span>
+</span><span class='line'>        <span class="nx">msg</span> <span class="p">=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;%s: %s&quot;</span><span class="p">,</span> <span class="nx">user</span><span class="p">,</span> <span class="nx">strings</span><span class="p">.</span><span class="nx">TrimSpace</span><span class="p">(</span><span class="nx">msg</span><span class="p">))</span>
+</span><span class='line'>        <span class="nx">sendMessage</span><span class="p">(</span><span class="nx">msg</span><span class="p">,</span> <span class="nx">uri</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>I used <code>bufio</code>, and not <code>fmt.Scanf</code> because I found a lot easier to read spaces from the terminal with the former. After reading the input, the message is passed to a function to be sent.</p>
+
+<p>The <code>Publish</code>&rsquo;s parameters are very similar to <code>Subscribe</code>, the only difference is the <code>RETAIN_MESSAGE</code>. When this argument is flagged true, the broker stores the last message and every time a new user subscribes it receives that retained message.</p>
+
+<p>I experimented using the parameter as true to see how it worked and had some trouble trying to remove the retained message after. As I did not want to receive that message every time I connected I discovered I had to overwrite it with a null value.</p>
+
+<p>I tried to publish a message with a null value, without success, and searched for a RabbitMQ client interface, and also didn&rsquo;t find any. The solution I had was using the <a href="https://mosquitto.org/">Mosquitto</a> client</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>mosquitto_pub -n -r -t <span class="s2">&quot;test&quot;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In which I publish (<code>mosquitto_pub</code>) a null message (<code>-n</code>) as retained (<code>-r</code>) to the topic &ldquo;test&rdquo; (<code>-t "test"</code>).</p>
+
+<p>But I&rsquo;m still uncomfortable not knowing how to do that with the Go&rsquo;s MQTT.</p>
+
+<p>The last piece of this code is the connect function, which is quite simple, it gets a few options <code>mqtt.ClientOptions</code>, and connects a new client. The loop with the <code>token.WaitTimeout</code> waits until the connection is established, checking it each microsecond:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">func</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">uri</span> <span class="o">*</span><span class="nx">url</span><span class="p">.</span><span class="nx">URL</span><span class="p">)</span> <span class="nx">mqtt</span><span class="p">.</span><span class="nx">Client</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">opts</span> <span class="o">:=</span> <span class="nx">createClientOptions</span><span class="p">(</span><span class="nx">uri</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">client</span> <span class="o">:=</span> <span class="nx">mqtt</span><span class="p">.</span><span class="nx">NewClient</span><span class="p">(</span><span class="nx">opts</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">token</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">Connect</span><span class="p">()</span>
+</span><span class='line'>    <span class="k">for</span> <span class="p">!</span><span class="nx">token</span><span class="p">.</span><span class="nx">WaitTimeout</span><span class="p">(</span><span class="nx">time</span><span class="p">.</span><span class="nx">Microsecond</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="nx">failOnError</span><span class="p">(</span><span class="nx">token</span><span class="p">.</span><span class="nx">Error</span><span class="p">(),</span> <span class="s">&quot;Failed while connecting&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">client</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The options are built using the data passed in URI, telling where the broker is, who is the user and its password. It is still possible to <code>SetClientID</code> in order to keep a session for a unique client (I did not use it here for simplicity&rsquo;s sake):</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='go'><span class='line'><span class="kd">func</span> <span class="nx">createClientOptions</span><span class="p">(</span><span class="nx">uri</span> <span class="o">*</span><span class="nx">url</span><span class="p">.</span><span class="nx">URL</span><span class="p">)</span> <span class="o">*</span><span class="nx">mqtt</span><span class="p">.</span><span class="nx">ClientOptions</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">password</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">uri</span><span class="p">.</span><span class="nx">User</span><span class="p">.</span><span class="nx">Password</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">name</span> <span class="o">:=</span> <span class="nx">uri</span><span class="p">.</span><span class="nx">User</span><span class="p">.</span><span class="nx">Username</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">opts</span> <span class="o">:=</span> <span class="nx">mqtt</span><span class="p">.</span><span class="nx">NewClientOptions</span><span class="p">()</span>
+</span><span class='line'>    <span class="nx">opts</span><span class="p">.</span><span class="nx">AddBroker</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Sprintf</span><span class="p">(</span><span class="s">&quot;tcp://%s&quot;</span><span class="p">,</span> <span class="nx">uri</span><span class="p">.</span><span class="nx">Host</span><span class="p">))</span>
+</span><span class='line'>    <span class="nx">opts</span><span class="p">.</span><span class="nx">SetUsername</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span>
+</span><span class='line'>    <span class="nx">opts</span><span class="p">.</span><span class="nx">SetPassword</span><span class="p">(</span><span class="nx">password</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nx">opts</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>There were some boilerplates I just skipped. The complete code can be seen <a href="https://gist.github.com/lucastamoios/d991322226107a7f8522bf26308b4906">here</a>.</p>
+
+<h2>Conclusion</h2>
+
+<p>This is a quite simple tutorial and I know it did not cover all the subject. Feel free to share any ideas or questions.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Understanding Private Proxies for Crawling]]></title>
+    <link href="http://lucastamoios.github.io/blog/2018/03/07/understanding-private-proxies-for-crawling/"/>
+    <updated>2018-03-07T09:00:02-03:00</updated>
+    <id>http://lucastamoios.github.io/blog/2018/03/07/understanding-private-proxies-for-crawling</id>
+    <content type="html"><![CDATA[<blockquote><p>Disclaimer: Since I started working with web crawling, I noticed it could be used in unethical ways. The line is not always clear, and it depends a lot on interpretations. I wrote this with the intention to help people to learn, so be responsible with this knowledge.</p></blockquote>
+
+<p>Along with CAPTCHAs, ReCAPTCHAs and <a href="https://panopticlick.eff.org/static/browser-uniqueness.pdf">Fingerprinting</a>, IP blocking is one of the most used techniques that sites use to keep crawlers away.</p>
+
+<p>The main way to bypass this protection is to use proxies. However, using a public proxy is almost always inefficient because of the <a href="https://www.whatismyip.com/blacklist-check/">blacklists</a>, which keep a track on these public IPs.</p>
+
+<blockquote><p>In this context, some people feel inclined to use Tor as the proxy, but besides being very slow, Tor is a resource aimed to help people under freedom constraints, and you should think twice before using it for trivial purposes.</p></blockquote>
+
+<p>Then you decide to rent private proxies, but there are many other things you should know to make the best decision. I will discourse below about a few things that may help you.</p>
+
+<h2>Proxy protocol</h2>
+
+<p>The most used protocol for proxies is HTTP/HTTPS, but sometimes you want to connect under another protocol, such as FTP, ICQ, Whois, etc, and then you should use a TCP Layer proxy protocol, which is the SOCKS protocol.</p>
+
+<p>There are yet mainly two types of SOCKS: SOCKS4, which supports only TCP, and SOCKS5, which supports both TCP and UDP, is more secure and it also supports authentication.</p>
+
+<p>SOCKS are very powerful and can also be used to connect to HTTP/HTTPS services. However, there are not so many providers on the internet that enables us to connect in the destination port <em>we want</em>, almost always it is restricted only to the ports 443 and 80.</p>
+
+<h2>Proxy exclusivity</h2>
+
+<p>There are three levels of proxy exclusivity: public, shared and dedicated.</p>
+
+<p>The <strong>public</strong>, as we said before, are used by lots of people and thus get blocked very fast, either because it is io a blacklist or simply being noticed by the host faster (because probably many people have used them for that purpose).</p>
+
+<p><strong>Shared proxies</strong> are used by more than one user, and have some of the public proxies downsides, but it can be a good choice if you intend to use it in a not so popular domain.</p>
+
+<p><strong>Dedicated proxies</strong> are the most expensive of all, but also have the best results in a general case, and it is very indicated to be used in popular domains as social media and e-commerce.</p>
+
+<h2>Connection type</h2>
+
+<p>When talking about crawlers, you usually connect to a proxy using some library (like the <a href="http://docs.python-requests.org/en/master/">Python Requests</a>) and must insert the proxy you want to connect to the function parameters. Usually, those proxy providers give you an IP and port to connect, like <code>123.1.12.10:8080</code>. Depending on the authentication method you also will need to put your credentials, like <code>user:passwd@123.1.12.10:8080</code>.</p>
+
+<p>However, the connection to this IP can happen in various ways, the most common is the <strong>direct connection</strong>, in other words, if you connect to that proxy, and then make a request to, for instance, <a href="https://api.ipify.org?format=json">ipify</a>, the answer must be that same IP you connected directly. When the proxy provider adopts this approach, they tend to give you an endpoint with the list of your proxies.</p>
+
+<p>When these providers want to give you a plethora of IPs, they cannot give you all the possible IPs they have in their database, so they give you some socket (IP + port) that works like a gateway for their service. That&rsquo;s how back-connected and rotating proxies work.</p>
+
+<p><strong>Back-connected proxies</strong> are just various proxies connected by only one socket. If you connect to a back-connected proxy, let&rsquo;s say <code>123.1.12.10:8080</code>, and then make a request to <a href="https://api.ipify.org?format=json">ipify</a>, your result <strong>will not be the same</strong> as your socket.</p>
+
+<p>The back-connected proxies can retrieve a proxy from a pool of randomized proxies or update your proxies periodically. This last type is usually called <strong>Rotating Proxy</strong>.</p>
+
+<h2>Network type</h2>
+
+<p>When you install internet in your home, you must contract an Internet Service Provider, or ISP, which gives you an IP each time you connect to the internet. If you check your IP on the internet, you will see that your IP is registered as coming from some ISP.</p>
+
+<p>There are other types of IPs which are bought just to serve as proxies. They are known as <strong>Datacenter IPs</strong>, and it is the most common proxy sold in the market today.</p>
+
+<p>The Datacenter IP have its downsides, one of them being the relative ease of blocking from well-known IP providers. The <a href="https://luminati.io/?affiliate=ref_5a4b87249e9a608a3997eb52&amp;cam=L_yairi">Luminati Proxy</a> service achieved a solution for this, which uses residential IPs from people who use Hola VPN, as said <a href="http://luminati.io/sdk">here</a>.</p>
+
+<p><strong>Residential IPs</strong> use a back-connected socket (or Super Proxy, as called by Luminati), in which every time you connect they change your IP from a pool of millions of IPs.</p>
+
+<p>There is another solution called <strong>Mobile IPs</strong>, which is very similar to Residential but not so popular.</p>
+
+<h2>Other relevant features to check</h2>
+
+<p>While renting a proxy there are yet many other things to pay attention.</p>
+
+<p><strong>Bandwidth</strong>: You must know how much data pass through the proxies and if your proxy provider has any limit for data traffic.</p>
+
+<p><strong>Subnets</strong>: When talking about Datacenter IPs, this may be the most important resource to pay attention, because lots of firewalls block all the subnet you are.</p>
+
+<p><strong>Replacement</strong>: You need to have an option to replace your proxies if they get blocked, even if the replacement is done once in a month. Otherwise, you will pay for a service you cannot use.</p>
+
+<p><strong>IP location</strong>: This is mostly related to the crawled sites, some of them (especially government sites) allow only proxies from a given location to access.</p>
+
+<p><strong>Authentication system</strong>: Most of the proxy services allow connection with IP or with username + password. However, when the authentication is using IPs, you must pay attention if the amount of IPs is limited.</p>
+
+<p><strong>Customer service</strong>: To me, this is one of the most important features, since you almost always have any doubt or problem while using the proxy service.</p>
+
+<h2>My experience with proxies</h2>
+
+<blockquote><p>This post is about a topic that change a lot, and the experiences below may be out of date.</p></blockquote>
+
+<p>I must have used a few proxy services in the last year and will share below <em>my impressions</em>. Most of the proxies that I did not use was because they did not answer my tickets or took several days to do so.</p>
+
+<p><a href="https://blazingseollc.com/">Blazing proxies</a>: We use it yet in most of our application because it has support to SOCKS5 (and we can choose the port we will connect), it has <em>lots</em> of subnets, have a fair price and a fair customer service, and no bandwidth limitations.</p>
+
+<p><a href="https://luminati.io/?affiliate=ref_5a4b87249e9a608a3997eb52&amp;cam=L_yairi">Luminati</a>: I was amazed by their product because they are the vanguard in the Residential proxies, which are virtually unblockable. Even their Datacenter IPs are fresh and constantly replaced. They have a <a href="https://luminati.io/cp/lpm">Proxy Management System</a> and you can configure it in lots of ways. But the most incredible feature they have is their customer service, which was my best customer experience so far. Their downside is the high prices (which is still fair to the product they sell) and the bureaucracy to contract some services, which are also fair, given the nature of their services.</p>
+
+<p><a href="https://rotatingproxies.com/">RotatingProxies</a>: A back-connected proxy service which changes their IPs every 5 minutes. They use residential IPs, but I found out the proxies had no much quality and were almost always already blocked by the service I tried to connect. They also have a long time to activate your account.</p>
+
+<p><a href="https://www.sharedproxies.com/">SharedProxies</a>: A cheap service but with very few subnets. They also charge if you will try to connect to it using more than one IP.</p>
+
+<p><em>[Editted 2019-06-03]</em>
+<a href="https://www.proxyrack.com/">ProxyRack</a>: They have rotating residential proxies with cheap prices and thousands of IPs. The caveat is when you need to cancel the service, you must send them an e-mail.</p>
+
+<h2>Conclusion</h2>
+
+<p>Proxies are almost always needed for large scale web crawling and can be painful to choose the best service if you do not know what you need. You must be able to define your priorities and constraints and know well the choices you have in the market, and this post is a starting point to make that choice.</p>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[GnuPG Small Guide]]></title>
-    <link href="https://lucastamoios.github.io/blog/2019/05/23/gnupg-small-guide/"/>
-    <updated>2019-05-23T10:01:48-03:00</updated>
-    <id>https://lucastamoios.github.io/blog/2019/05/23/gnupg-small-guide</id>
-    <content type="html"><![CDATA[<p>GnuPG, or Gnu Privacy Guard, is a software that implements the standart OpenPGP &ndash; in which PGP stands for Pretty Good Privacy.</p>
+    <link href="http://lucastamoios.github.io/blog/2017/06/20/gnupg-small-guide/"/>
+    <updated>2017-06-20T10:01:48-03:00</updated>
+    <id>http://lucastamoios.github.io/blog/2017/06/20/gnupg-small-guide</id>
+    <content type="html"><![CDATA[<p>GnuPG, or Gnu Privacy Guard, is a software that implements the OpenPGP standard &ndash; in which PGP stands for Pretty Good Privacy.</p>
 
-<p>It is a tool used for &ndash; crash the drums &ndash; privacy. By privacy you should understand sending private messages between users, to store any data safely, being sure that a message has a given origin, and others.</p>
+<p>It is a tool used for &ndash; crash the drums &ndash; privacy. By privacy, you should understand sending private messages between users, to store any data safely, being sure that a message has a given origin and others.</p>
 
-<p>For those who think that privacy is a waste of time, stuff for paranoid tech guys, I suggest to read <a href="https://workplace.stackexchange.com/questions/91643/someone-forged-my-resignation-letter">this post</a> in Stack Exchange.</p>
+<p>For those who think that privacy is a waste of time, stuff for paranoid tech guys, I suggest reading <a href="https://workplace.stackexchange.com/questions/91643/someone-forged-my-resignation-letter">this post</a> in Stack Exchange.</p>
 
-<p>Although we live in a free era, the freedom is sometimes menaced by dictatorships and state surveillance, and we do not know when these privacy knowledge will go from &ldquo;nice to have&rdquo; to a &ldquo;must have&rdquo;.</p>
+<p>Although we live in a free era, the freedom is sometimes menaced by dictatorships and state surveillance and we do not know when these privacy knowledge will go from &ldquo;nice to have&rdquo; to a &ldquo;must have&rdquo;.</p>
 
-<p>PGP was created in 1991 by Phil Zimmermann, in order to securely store messages and files, and no license was required for its non commercial use. In 1997 it was proposed as a standard in the IETF, and thus emerged OpenPGP.</p>
+<p>PGP was created in 1991 by Phil Zimmermann, in order to securely store messages and files, and no license was required for its non-commercial use. In 1997 it was proposed as a standard in the IETF, and thus emerged OpenPGP.</p>
 
 <h2>Uses for the GPG</h2>
 
 <p>GPG have some nice features, some used more frequently, others not so:</p>
 
 <ul>
-<li><em>Signing and verifing a commit</em>: With this you can always know the owner of a commit, as well as let the others be sure you wrote some piece of code. The <a href="https://mikegerwitz.com/papers/git-horror-story">Git Horror Story</a> is a tale that try to instill the sense for sign/verify commits into the greenhorn programmers. Besides it all, there are <a href="http://git.661346.n2.nabble.com/GPG-signing-for-git-commit-td2582986.html">some people</a> that have its own issues with commit signatures.</li>
-<li><em>Send and receive cryptographed messages</em>: Remember when as a kid you created encoded messages and tought no one would never understand¹? Well, bad news, <strong>everyone</strong> could read them. But now you can create messages that no one will understand², for real.</li>
+<li><em>Signing and verifying a commit</em>: With this, you can always know the owner of a commit, as well as let the others be sure you wrote some piece of code. The <a href="https://mikegerwitz.com/papers/git-horror-story">Git Horror Story</a> is a tale that tries to instill the sense for sign/verify commits into the greenhorn programmers. Besides it all, there are <a href="http://git.661346.n2.nabble.com/GPG-signing-for-git-commit-td2582986.html">some people</a> that have its own issues with commit signatures.</li>
+<li><em>Send and receive cryptographed messages</em>: Remember when as a kid you created encoded messages and thought no one would never understand¹? Well, bad news, <strong>everyone</strong> could read them. But now you can create messages that no one will understand², for real.</li>
 <li><em>Checking signatures</em>: It is possible to know (with a great confidence degree) that some file is from someone specific. For instance, consider <a href="https://www.torproject.org/download/download">downloading Tor</a>, it is a secure browser, but if you download a hacked software, it will serve for the exact contrary of its purpose. But calm down, no need to cry, with GPG you can check the integrity of any software.</li>
 </ul>
 
 
 <p>Come with us to learn cool stuff!</p>
 
-<p>¹ No? Oh&hellip; sorry for your childhood. :&lsquo;(<br/>
+<p>¹ No? Oh&hellip; sorry for your childhood. :&lsquo;(
 ² Maybe it is possible to <a href="https://www.quora.com/How-long-would-it-take-to-crack-a-RSA-4096bit-GPG-PGP-Encryption-Private-Key">break a 4096 RSA encryption</a>.</p>
 
 <h2>Creating your key</h2>
 
 <p>First of all, you must <a href="https://www.gnupg.org/download/index.html">download and install</a> the GPG tools. Then you can check the installation with</p>
 
-<pre><code>$ gpg --version
+<pre><code>&gt; gpg --version
 gpg (GnuPG) 1.4.20
 License GPLv3+: GNU GPL version 3 or later [...]
 </code></pre>
 
 <p>The next step is to create a key for your use, which is very easy! The step-by-step can be seen <a href="https://www.gnupg.org/gph/en/manual/c14.html#AEN25">here</a> or <a href="http://ekaia.org/blog/2009/05/10/creating-new-gpgkey/">here</a>. Briefly, it is</p>
 
-<pre><code>$ gpg --gen-key
+<pre><code>&gt; gpg --gen-key
 </code></pre>
 
-<p>And some things you must pay attention during the creation of the key:
-- I would rather choose RSA kind of key. I suggest you to <a href="https://security.stackexchange.com/questions/5096/rsa-vs-dsa-for-ssh-authentication-keys">read this</a> to understand why.
-- Be sure to choose the maximum bit lenght for your key, if you want it to be safer. At the time this article is being written, the maximum is 4096.
-- It is nice to set an expiration date. It must happen to you to lost your key, or die (as we all some day), and then is a good practice to let others know that key is not being used anymore.
-- Avoid comments on your key, as it is redundant at almost every time.
-- It is nice to use strong digest algos like SHA512. I suggest you to understand and create a nice <a href="https://raw.githubusercontent.com/ioerror/duraconf/master/configs/gnupg/gpg.conf"><code>gpg.conf</code></a> to assure you are using the best configuration.</p>
+<p>And some things you must pay attention to the creation of the key:</p>
+
+<ul>
+<li>I would rather choose RSA kind of key. I suggest you to <a href="https://security.stackexchange.com/questions/5096/rsa-vs-dsa-for-ssh-authentication-keys">read this</a> to understand why.</li>
+<li>Be sure to choose the maximum bit length for your key, if you want it to be safer. At the time this article is being written, the maximum is 4096.</li>
+<li>It is nice to set an expiration date. It must happen to you to lose your key or die (as we all some day) and then is a good practice to let others know that key is not being used anymore.</li>
+<li>Avoid comments on your key, as it is redundant at almost every time.</li>
+<li>It is nice to use strong digest algos like SHA512. I suggest you understand and create a nice <a href="https://raw.githubusercontent.com/ioerror/duraconf/master/configs/gnupg/gpg.conf"><code>gpg.conf</code></a> to assure you are using the best configuration.</li>
+</ul>
+
 
 <p><a href="https://riseup.net/ru/security/message-security/openpgp/best-practices">Here</a> you can find a lot of other good practices for your GPG day-to-day use.</p>
 
 <p>Assuming you finished the creation of your key, you can check it all with</p>
 
-<pre><code>$ gpg --list-keys
+<pre><code>&gt; gpg --list-keys
 pub   4096R/746F8A65 2017-05-24 [expires: 2018-05-24]
       Key fingerprint = 014C F6E9 C2E0 12A2 4187  F108 178A C6CD 746F 8A65
       uid                  Lucas Almeida Aguiar &lt;lucas.tamoios@gmail.com&gt;
       sub   4096R/AFC85A01 2017-05-24 [expires: 2018-05-24]
 </code></pre>
 
-<p>As a brief summary, <strong>pub</strong> stands for public key, then you have the key lenght (4096 bits) with the R from RSA, a slash and the short fingerprint, then the creation and expiration date. The short fingerprint takes the last 8 digits from your actual fingerprint. The <strong>uid</strong> is what you wrote few minutes ago, when I told you to do not write a comment. Let&rsquo;s talk about the subs later.</p>
+<p>As a brief summary, <strong>pub</strong> stands for &ldquo;public&rdquo; key, then you have the key length (4096 bits) with the R from RSA, a slash, and the short fingerprint, then the creation and expiration date. The short fingerprint takes the last 8 digits from your actual fingerprint. The <strong>uid</strong> is what you wrote a few minutes ago when I told you to do not write a comment. Let&rsquo;s talk about the subs later.</p>
 
-<p>For now, <strong>pay attention</strong>: the uid is not enough for you to believe someone is who he/she is telling you he/she is. Anyone can create a key with any name or e-mail. To be sure someone is really who he/she is telling you, you must check its <strong>fingerprint</strong>. We will cover it deeper when discussing about web of trust.</p>
+<p>For now, <strong>pay attention</strong>: the uid is not enough for you to believe someone is who he/she is telling you he/she is. Anyone can create a key with any name or e-mail. To be sure someone is really who he/she is telling you, you must check its <strong>fingerprint</strong>. We will cover it deeper when discussing web of trust.</p>
 
 <h2>Working with keys</h2>
 
-<p>Generally you have not only your keys, but also other people&rsquo;s public keys, that you use to verify signatures and to send them encoded stuff. You have the power to edit your key and change how you see the other&rsquo;s keys with</p>
+<p>Generally, you have not only your keys but also other people&rsquo;s public keys, that you use to verify signatures and to send them encoded stuff. You have the power to edit your key and change how you see the other&rsquo;s keys with</p>
 
-<pre><code>$ gpg --edit-keys 746F8A65
+<pre><code>&gt; gpg --edit-keys 746F8A65
 </code></pre>
 
 <p>This hash in front of the command is just the short fingerprint of the uuid you want to edit.</p>
 
-<pre><code>$ gpg --edit-keys 746F8A65
+<pre><code>&gt; gpg --edit-keys 746F8A65
 gpg (GnuPG) 1.4.20; Copyright (C) 2015 Free Software Foundation, Inc.
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
@@ -108,7 +429,7 @@ sub  4096R/B2CD6DC9  created: 2017-05-24  expires: 2018-05-24  usage: S
 - <strong>E</strong> for <strong>e</strong>ncrypt
 - <strong>C</strong> for <strong>c</strong>ertify</p>
 
-<p>The certify usage is the most powerful of them, because it can create, trust and revoke keys.</p>
+<p>The certify usage is the most powerful of them because it can create, trust and revoke keys.</p>
 
 <p>The <code>gpg --edit-keys</code> allows you to change passwords, trust keys, sign keys, change expire date, <a href="https://www.gnupg.org/gph/en/manual/r899.html">and other</a>.</p>
 
@@ -126,22 +447,20 @@ sub  4096R/B2CD6DC9  created: 2017-05-24  expires: 2018-05-24  usage: S
 </ul>
 
 
-<p>To trust someone you must first import a key. You can import the raw file with the public key with</p>
+<p>To trust someone you must first import a key. You can import the raw file with
+the public key with</p>
 
-<pre><code>$ gpg --import john_doe.asc
+<pre><code>&gt; gpg --import john_doe.asc
 </code></pre>
 
 <p>or download it from a keyserver</p>
 
-<pre><code>$ gpg --keyserver hkp://pgp.mit.edu --search-keys "john_doe@example.com"
+<pre><code>&gt; gpg --keyserver hkp://pgp.mit.edu --search-keys "john_doe@example.com"
 </code></pre>
 
 <p>Then when you <code>--list-keys</code>, the key you imported should be there.</p>
 
-<blockquote><p>Trusting keys is a serious issue. If you start to trust everyone, without
-checking, you will probably end up being yourself trusted as &ldquo;Never&rdquo;. I recommend you
-to only trust keys when you are sure it belongs to its owner, and checked with
-him the key&rsquo;s fingerprint.</p></blockquote>
+<blockquote><p>Trusting keys is a serious issue. If you start to trust everyone, without checking, you will probably end up being yourself trusted as &ldquo;Never&rdquo;. I recommend you to only trust keys when you are sure it belongs to its owner, and checked with him the key&rsquo;s fingerprint.</p></blockquote>
 
 <p>Check the fingerprint of the key you want to trust</p>
 
@@ -160,11 +479,105 @@ pub  4096R/930F2A9E  created: 2017-06-20 expires: 2018-06-20 usage: SC
 gpg&gt; trust
 </code></pre>
 
-<p>Then you must set the trust level, according with the list described above. See <a href="https://www.gnupg.org/gph/en/manual/x334.html">here</a> with more details.</p>
+<p>Then you must set the trust level, according to the list described above. See <a href="https://www.gnupg.org/gph/en/manual/x334.html">here</a> with more details.</p>
 
 <h2>Conclusion</h2>
 
-<p>The aim of this post was to give an overview about GPG, since the links I put here can serve as a bootstrap to further learnings.</p>
+<p>The aim of this post was to give an overview about GPG, since the links I put
+here can serve as a bootstrap to further learnings.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Linux Asynchronous I/O]]></title>
+    <link href="http://lucastamoios.github.io/blog/2017/05/30/linux-asynchronous-i-slash-o/"/>
+    <updated>2017-05-30T09:24:45-03:00</updated>
+    <id>http://lucastamoios.github.io/blog/2017/05/30/linux-asynchronous-i-slash-o</id>
+    <content type="html"><![CDATA[<blockquote><p>Disclaimer: This post is a compilation of my study notes and I am not an expert on this subject (yet). I put the sources linked for a deeper understanding.</p></blockquote>
+
+<p>When we talk about asynchronous tasks what comes to our minds is almost always a task running in a separated thread. But, as I will clear below, this task usually is blocking, and not async at all.</p>
+
+<p>Another <a href="https://stackoverflow.com/questions/2625493/asynchronous-vs-non-blocking">interesting misunderstanding</a> occurs between nonblocking and asynchronous (or blocking and synchronous as well), and people use to think these pair of words are always interchangeable. We will discuss <a href="#the-confusion">below</a> why this is wrong.</p>
+
+<h2>The models</h2>
+
+<p>So here we will discuss the 04 available I/O models under Linux, they are:</p>
+
+<ul>
+<li>blocking I/O</li>
+<li>nonblocking I/O</li>
+<li>I/O multiplexing</li>
+<li>asynchronous I/O</li>
+</ul>
+
+
+<h3>Blocking I/O</h3>
+
+<p>The most common way to get information from a file descriptor is a synchronous and blocking I/O. It sends a request and waits until data is copied from the kernel to the user.</p>
+
+<p>An easy way to implement multitasking is to create various threads, each one with blocking requests.</p>
+
+<h3>Non-blocking I/O</h3>
+
+<p>This is a <strong>synchronous</strong> and non-blocking way to get data.</p>
+
+<p>When a device is open with the option <code>O_NONBLOCK</code>, any unsuccessful try to read it return an exception <code>EWOULDBLOCK</code> or <code>EAGAIN</code>. The application then retries to read the data until the file descriptor is ready for reading.</p>
+
+<p>This method is very wasteful and maybe that&rsquo;s the reason to be rarely used.</p>
+
+<h3>I/O multiplexing or select/poll</h3>
+
+<p>This method is an <strong>asynchronous and blocking</strong> way to get data.</p>
+
+<p>The multiplexing, in POSIX, is done with the functions <code>select()</code> and <code>poll()</code>, that registers one or more file descriptors to be read, and then blocks the thread. As been as the file becomes available, the select returns and is possible to copy the data from the kernel to the user.</p>
+
+<p>I/O multiplexing is almost the same as the blocking I/O, with the difference that is possible to wait for multiple file descriptors to be ready at a time.</p>
+
+<h3>Asynchronous I/O</h3>
+
+<p>This one is the method that is, at the same time, <strong>asynchronous</strong> and <strong>non-blocking</strong>.</p>
+
+<p>The async functions tell the kernel to do all the job and report only when the entire message is ready in the kernel for the user (or already in the user space).</p>
+
+<p>There are two asynchronous models:</p>
+
+<ul>
+<li>The all asynchronous model, that the POSIX functions that begin with <code>aio_</code> or <code>lio_</code>;</li>
+<li>The signal-driven model, that uses <code>SIGIO</code> to signal when the file descriptor is ready.</li>
+</ul>
+
+
+<p>One of the main difference between these two is that the first copy data from kernel to the user, while the seconds let the user do that.</p>
+
+<h2>The confusion</h2>
+
+<p>The <a href="http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html">POSIX</a> states that</p>
+
+<blockquote><p>Asynchronous I/O Operation is an I/O operation that does not of itself cause the thread requesting the I/O to be blocked from further use of the processor. This implies that the process and the I/O operation may be running concurrently.</p></blockquote>
+
+<p>So the third and fourth models are, really, asynchronous. The third being blocker, since after the register of the functions it waits for the FDs.</p>
+
+<p>I believe that there is almost always space to a discussion when it comes to the use of any terms. But only the fact that <em>there is</em> divergence whether blocking I/O and synchronous I/O are the same thing shows us that we have to be cautious when we use these terms.</p>
+
+<p>To finish, an image worths a thousand of words, and a table even more, so let us look at this:</p>
+
+<blockquote><p><a href="//imgur.com/3ZXbQ1d"></a></p></blockquote>
+
+<h2>Further words</h2>
+
+<p>When dealing with asynchronous file descriptors, it is important to make account of how many of them the application can handle open at a time. This is easily checked with</p>
+
+<pre><code>$ cat /proc/sys/fs/file-max
+</code></pre>
+
+<p>Be sure to check it to the right user.</p>
+
+<h2>Other References</h2>
+
+<p><a href="https://notes.shichao.io/unp/ch6">I/O Multiplexing</a>, <em>by shichao</em><br/>
+<a href="https://www.ibm.com/developerworks/library/l-async/">Boost application performance using asynchronous I/O</a>, <em>by M. Jones</em><br/>
+<a href="http://davmac.org/davpage/linux/async-io.html">Asynchronous I/O and event notification on linux</a><br/>
+<a href="http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html">The Open Group Base Specifications Issue 7</a>, <em>by The IEEE and The Open Group</em></p>
 ]]></content>
   </entry>
   

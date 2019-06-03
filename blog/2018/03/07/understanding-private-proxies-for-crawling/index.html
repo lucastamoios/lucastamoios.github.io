@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Understanding Private Proxies for Crawling - Lucas' Blog</title>
+  <meta name="author" content="Lucas A. Aguiar">
+
+  
+  <meta name="description" content="Disclaimer: Since I started working with web crawling, I noticed it could be used in unethical ways. The line is not always clear, and it depends a &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://lucastamoios.github.io/blog/2018/03/07/understanding-private-proxies-for-crawling/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Lucas' Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Lucas' Blog</a></h1>
+  
+    <h2>cat /dev/thoughts</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="lucastamoios.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Understanding Private Proxies for Crawling</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2018-03-07T09:00:02-03:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2018</span></span> <span class='time'>9:00 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><blockquote><p>Disclaimer: Since I started working with web crawling, I noticed it could be used in unethical ways. The line is not always clear, and it depends a lot on interpretations. I wrote this with the intention to help people to learn, so be responsible with this knowledge.</p></blockquote>
+
+<p>Along with CAPTCHAs, ReCAPTCHAs and <a href="https://panopticlick.eff.org/static/browser-uniqueness.pdf">Fingerprinting</a>, IP blocking is one of the most used techniques that sites use to keep crawlers away.</p>
+
+<p>The main way to bypass this protection is to use proxies. However, using a public proxy is almost always inefficient because of the <a href="https://www.whatismyip.com/blacklist-check/">blacklists</a>, which keep a track on these public IPs.</p>
+
+<blockquote><p>In this context, some people feel inclined to use Tor as the proxy, but besides being very slow, Tor is a resource aimed to help people under freedom constraints, and you should think twice before using it for trivial purposes.</p></blockquote>
+
+<p>Then you decide to rent private proxies, but there are many other things you should know to make the best decision. I will discourse below about a few things that may help you.</p>
+
+<h2>Proxy protocol</h2>
+
+<p>The most used protocol for proxies is HTTP/HTTPS, but sometimes you want to connect under another protocol, such as FTP, ICQ, Whois, etc, and then you should use a TCP Layer proxy protocol, which is the SOCKS protocol.</p>
+
+<p>There are yet mainly two types of SOCKS: SOCKS4, which supports only TCP, and SOCKS5, which supports both TCP and UDP, is more secure and it also supports authentication.</p>
+
+<p>SOCKS are very powerful and can also be used to connect to HTTP/HTTPS services. However, there are not so many providers on the internet that enables us to connect in the destination port <em>we want</em>, almost always it is restricted only to the ports 443 and 80.</p>
+
+<h2>Proxy exclusivity</h2>
+
+<p>There are three levels of proxy exclusivity: public, shared and dedicated.</p>
+
+<p>The <strong>public</strong>, as we said before, are used by lots of people and thus get blocked very fast, either because it is io a blacklist or simply being noticed by the host faster (because probably many people have used them for that purpose).</p>
+
+<p><strong>Shared proxies</strong> are used by more than one user, and have some of the public proxies downsides, but it can be a good choice if you intend to use it in a not so popular domain.</p>
+
+<p><strong>Dedicated proxies</strong> are the most expensive of all, but also have the best results in a general case, and it is very indicated to be used in popular domains as social media and e-commerce.</p>
+
+<h2>Connection type</h2>
+
+<p>When talking about crawlers, you usually connect to a proxy using some library (like the <a href="http://docs.python-requests.org/en/master/">Python Requests</a>) and must insert the proxy you want to connect to the function parameters. Usually, those proxy providers give you an IP and port to connect, like <code>123.1.12.10:8080</code>. Depending on the authentication method you also will need to put your credentials, like <code>user:passwd@123.1.12.10:8080</code>.</p>
+
+<p>However, the connection to this IP can happen in various ways, the most common is the <strong>direct connection</strong>, in other words, if you connect to that proxy, and then make a request to, for instance, <a href="https://api.ipify.org?format=json">ipify</a>, the answer must be that same IP you connected directly. When the proxy provider adopts this approach, they tend to give you an endpoint with the list of your proxies.</p>
+
+<p>When these providers want to give you a plethora of IPs, they cannot give you all the possible IPs they have in their database, so they give you some socket (IP + port) that works like a gateway for their service. That&rsquo;s how back-connected and rotating proxies work.</p>
+
+<p><strong>Back-connected proxies</strong> are just various proxies connected by only one socket. If you connect to a back-connected proxy, let&rsquo;s say <code>123.1.12.10:8080</code>, and then make a request to <a href="https://api.ipify.org?format=json">ipify</a>, your result <strong>will not be the same</strong> as your socket.</p>
+
+<p>The back-connected proxies can retrieve a proxy from a pool of randomized proxies or update your proxies periodically. This last type is usually called <strong>Rotating Proxy</strong>.</p>
+
+<h2>Network type</h2>
+
+<p>When you install internet in your home, you must contract an Internet Service Provider, or ISP, which gives you an IP each time you connect to the internet. If you check your IP on the internet, you will see that your IP is registered as coming from some ISP.</p>
+
+<p>There are other types of IPs which are bought just to serve as proxies. They are known as <strong>Datacenter IPs</strong>, and it is the most common proxy sold in the market today.</p>
+
+<p>The Datacenter IP have its downsides, one of them being the relative ease of blocking from well-known IP providers. The <a href="https://luminati.io/?affiliate=ref_5a4b87249e9a608a3997eb52&amp;cam=L_yairi">Luminati Proxy</a> service achieved a solution for this, which uses residential IPs from people who use Hola VPN, as said <a href="http://luminati.io/sdk">here</a>.</p>
+
+<p><strong>Residential IPs</strong> use a back-connected socket (or Super Proxy, as called by Luminati), in which every time you connect they change your IP from a pool of millions of IPs.</p>
+
+<p>There is another solution called <strong>Mobile IPs</strong>, which is very similar to Residential but not so popular.</p>
+
+<h2>Other relevant features to check</h2>
+
+<p>While renting a proxy there are yet many other things to pay attention.</p>
+
+<p><strong>Bandwidth</strong>: You must know how much data pass through the proxies and if your proxy provider has any limit for data traffic.</p>
+
+<p><strong>Subnets</strong>: When talking about Datacenter IPs, this may be the most important resource to pay attention, because lots of firewalls block all the subnet you are.</p>
+
+<p><strong>Replacement</strong>: You need to have an option to replace your proxies if they get blocked, even if the replacement is done once in a month. Otherwise, you will pay for a service you cannot use.</p>
+
+<p><strong>IP location</strong>: This is mostly related to the crawled sites, some of them (especially government sites) allow only proxies from a given location to access.</p>
+
+<p><strong>Authentication system</strong>: Most of the proxy services allow connection with IP or with username + password. However, when the authentication is using IPs, you must pay attention if the amount of IPs is limited.</p>
+
+<p><strong>Customer service</strong>: To me, this is one of the most important features, since you almost always have any doubt or problem while using the proxy service.</p>
+
+<h2>My experience with proxies</h2>
+
+<blockquote><p>This post is about a topic that change a lot, and the experiences below may be out of date.</p></blockquote>
+
+<p>I must have used a few proxy services in the last year and will share below <em>my impressions</em>. Most of the proxies that I did not use was because they did not answer my tickets or took several days to do so.</p>
+
+<p><a href="https://blazingseollc.com/">Blazing proxies</a>: We use it yet in most of our application because it has support to SOCKS5 (and we can choose the port we will connect), it has <em>lots</em> of subnets, have a fair price and a fair customer service, and no bandwidth limitations.</p>
+
+<p><a href="https://luminati.io/?affiliate=ref_5a4b87249e9a608a3997eb52&amp;cam=L_yairi">Luminati</a>: I was amazed by their product because they are the vanguard in the Residential proxies, which are virtually unblockable. Even their Datacenter IPs are fresh and constantly replaced. They have a <a href="https://luminati.io/cp/lpm">Proxy Management System</a> and you can configure it in lots of ways. But the most incredible feature they have is their customer service, which was my best customer experience so far. Their downside is the high prices (which is still fair to the product they sell) and the bureaucracy to contract some services, which are also fair, given the nature of their services.</p>
+
+<p><a href="https://rotatingproxies.com/">RotatingProxies</a>: A back-connected proxy service which changes their IPs every 5 minutes. They use residential IPs, but I found out the proxies had no much quality and were almost always already blocked by the service I tried to connect. They also have a long time to activate your account.</p>
+
+<p><a href="https://www.sharedproxies.com/">SharedProxies</a>: A cheap service but with very few subnets. They also charge if you will try to connect to it using more than one IP.</p>
+
+<p><em>[Editted 2019-06-03]</em>
+<a href="https://www.proxyrack.com/">ProxyRack</a>: They have rotating residential proxies with cheap prices and thousands of IPs. The caveat is when you need to cancel the service, you must send them an e-mail.</p>
+
+<h2>Conclusion</h2>
+
+<p>Proxies are almost always needed for large scale web crawling and can be painful to choose the best service if you do not know what you need. You must be able to define your priorities and constraints and know well the choices you have in the market, and this post is a starting point to make that choice.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Lucas A. Aguiar</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2018-03-07T09:00:02-03:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2018</span></span> <span class='time'>9:00 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://lucastamoios.github.io/blog/2018/03/07/understanding-private-proxies-for-crawling/" data-via="" data-counturl="http://lucastamoios.github.io/blog/2018/03/07/understanding-private-proxies-for-crawling/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2017/06/20/gnupg-small-guide/" title="Previous Post: GnuPG small guide">&laquo; GnuPG small guide</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/" title="Next Post: Building a chat from scratch with Go and MQTT">Building a chat from scratch with Go and MQTT &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/">Building a Chat From Scratch With Go and MQTT</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2018/03/07/understanding-private-proxies-for-crawling/">Understanding Private Proxies for Crawling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/06/20/gnupg-small-guide/">GnuPG Small Guide</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/05/30/linux-asynchronous-i-slash-o/">Linux Asynchronous I/O</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/lucastamoios">@lucastamoios</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'lucastamoios',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2019 - Lucas A. Aguiar -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'lucastamoios';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://lucastamoios.github.io/blog/2018/03/07/understanding-private-proxies-for-crawling/';
+        var disqus_url = 'http://lucastamoios.github.io/blog/2018/03/07/understanding-private-proxies-for-crawling/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
