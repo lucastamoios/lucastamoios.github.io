@@ -4,7 +4,7 @@
   <title><![CDATA[Lucas' Blog]]></title>
   <link href="http://lucastamoios.github.io/atom.xml" rel="self"/>
   <link href="http://lucastamoios.github.io/"/>
-  <updated>2019-06-30T12:33:00-03:00</updated>
+  <updated>2019-06-30T20:53:55-03:00</updated>
   <id>http://lucastamoios.github.io/</id>
   <author>
     <name><![CDATA[Lucas A. Aguiar]]></name>
@@ -18,13 +18,15 @@
     <link href="http://lucastamoios.github.io/blog/2019/06/30/a-basic-guide-about-encodings/"/>
     <updated>2019-06-30T11:25:56-03:00</updated>
     <id>http://lucastamoios.github.io/blog/2019/06/30/a-basic-guide-about-encodings</id>
-    <content type="html"><![CDATA[<p>As well said by the Joel Spolsky<sup>[<a href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">1</a>]</sup>, it is almost unacceptable for a developer to be that reckless and ignore the existence of encodings. I&rsquo;ve faced lots of problems with roots in encodings and wasn&rsquo;t aware of that, also, even when I realized the existence of encodings, I was told that it was almost impossible to learn about it. Well, it is very confusing, but I found out that the main reason are the terms and the confusion that a lot of sources make using them.</p>
+    <content type="html"><![CDATA[<p>As well said by Joel Spolsky<sup>[<a href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">1</a>]</sup>, it is almost unacceptable for a developer to be that reckless and ignore the existence of encodings when all we deal with is information and encodings are the base of representing that information.</p>
 
-<p>I will present a basic structure and a few definitions below and then use examples and the most common questions about encodings. Feel free to suggest more questions in the comments.</p>
+<p>I&rsquo;ve faced lots of problems with roots in encodings and wasn&rsquo;t aware of that, also, even when I realized the existence of encodings, I was told that it was almost impossible to learn about it. Well, it is very confusing, but I found out that some of the main reasons are the terms and the confusion that a lot of sources make using them.</p>
+
+<p>This post will point a basic structure and a few definitions and then use examples and the most common questions about encodings. Feel free to suggest more questions in the comments.</p>
 
 <h2>A basic structure</h2>
 
-<p>To understand what encodings are, it is necessary to understand the information flow in which the idea of a character turns into a byte (and vice-versa). The RFC 2130<sup>[<a href="https://www.ietf.org/rfc/rfc2130.txt">2</a>]</sup>, defines 3 abstraction levels, here we will put a zeroth level before the others, based on the Unicode Model<sup>[<a href="http://www.unicode.org/reports/tr17/#CharacterEncodingModel">3</a>]</sup>, to improve the understanding:</p>
+<p>To understand what encodings are, it is necessary to understand the information flow in which the idea of a character turns into a byte (and vice-versa). The RFC 2130<sup>[<a href="https://www.ietf.org/rfc/rfc2130.txt">2</a>]</sup>, defines 3 abstraction levels, here we will put a level before the others and make them four, based on the Unicode Model<sup>[<a href="http://www.unicode.org/reports/tr17/#CharacterEncodingModel">3</a>]</sup>, to improve the understanding:</p>
 
 <ol>
 <li>Abstract Character Repertoire (ACR)</li>
@@ -72,8 +74,8 @@
 
 <ol>
 <li>(ABS) Abstract Character <code>Á</code></li>
-<li>(CCS) Code point U+00C1</li>
-<li>(CES) The octet <code>0xc381</code></li>
+<li>(CCS) Code point <code>U+00C1</code></li>
+<li>(CES) The octets <code>0xC381</code></li>
 <li>(TES) Base64 <code>w4E=</code></li>
 </ol>
 
@@ -94,19 +96,23 @@
 
 <h3>What are the other Coded Character Sets? I only know Unicode!</h3>
 
-<p>In the beginning, there were standards like ASCII (the name is the same across all the layers), and others CCS that completed it in terms of languages, like Cyrillic (ISO 8859-5) and Latin1 (ISO 8859-1). The effort to unify it gave birth to the Unicode and later ISO 10646, that wrapped them. There is also another CCS standard used in China called GB18030<sup>[<a href="https://en.wikipedia.org/wiki/GB_18030">9</a>]</sup></p>
+<p>There are lots of CCSs, for example, in the beginning, there were standards like EBCDIC and ASCII (the name is the same across all the layers), and others CCS that completed ASCII in terms of languages arise later, like Cyrillic (ISO 8859-5) and Latin1 (ISO 8859-1). The effort to unify it gave birth to the Unicode and ISO 10646, that wrapped the other standards. There is also another CCS standard used in China called GB18030<sup>[<a href="https://en.wikipedia.org/wiki/GB_18030">9</a>]</sup>.</p>
 
-<p>The Unicode and the ISO 10646 are now synchronized<sup>[<a href="https://en.wikipedia.org/wiki/Unicode">8</a>]</sup> and the names are almost interchangeable.</p>
+<p>Important to emphasize that the Unicode and the ISO 10646 are now synchronized<sup>[<a href="https://en.wikipedia.org/wiki/Unicode">8</a>]</sup> and the names are almost interchangeable.</p>
 
 <h3>There are CCS inside others CCS? Like Latin1 is inside Unicode?</h3>
 
-<p>Subsetting is a major formal aspect of ISO/IEC 10646. The standard includes a set of internal catalog numbers for named subsets and further makes a distinction between subsets that are fixed collections and those that are open collections, defined by a range of code positions. Open collections are extended any time in addition to the repertoire gets encoded in a code position between the range limits defining the collection. When the last of its open code positions are filled, an open collection automatically becomes a fixed collection.</p>
+<p>As the technical report for Unicode Character Encoding Model<sup>[<a href="http://www.unicode.org/reports/tr17/#CharacterEncodingModel">3</a>]</sup> notes:</p>
+
+<blockquote><p>Subsetting is a major formal aspect of ISO/IEC 10646. The standard includes a set of internal catalog numbers for named subsets and further makes a distinction between subsets that are fixed collections and those that are open collections, defined by a range of code positions. Open collections are extended any time in addition to the repertoire gets encoded in a code position between the range limits defining the collection. When the last of its open code positions are filled, an open collection automatically becomes a fixed collection.</p></blockquote>
+
+<p>So, there is various Latin CCS and also there is a subset of Unicode/10646 that is called Latin. It is not like the Latin1 (ISO 8859-1) itself is inside Unicode, but all of its characters are and they form a collection.</p>
 
 <h3>And what is &ldquo;plain text&rdquo;?</h3>
 
 <p>The use of the &ldquo;plain text&rdquo; expression is controversial<sup>[<a href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">1</a>]</sup>, but still, it is largely used, and it may be useful to at least try to understand what it should mean.</p>
 
-<p>When the ASCII was firstly implanted, the CCS/CES had 256 possible codepoints but only 128 being used, what left 128 spare positions. So a lot of people had a lot of different ideas with what to do with the spare bits. Western Europe created the Latin1 and others, the Russian created the Cyrillic and almost every other culture made their version. Despite this Babel Tower, almost all the encodings preserved the ASCII characters with the same octets. The newer encodings like UTF-8 also followed this convention.</p>
+<p>When the ASCII was firstly implanted, the CCS/CES had 256 possible codepoints but only 128 being used, what left 128 spare positions. So a lot of people had a lot of different ideas with what to do with the spare bits. Western Europe created the Latin and others, the Russian created the Cyrillic and almost every other culture made their version. Despite this Babel Tower, almost all the encodings preserved the ASCII characters with the same octets. The newer encodings like UTF-8 also followed this convention.</p>
 
 <p>According to Jukka Korpela<sup>[<a href="http://jkorpela.fi/chars.html">6</a>]</sup></p>
 
@@ -118,7 +124,7 @@
 
 <p>Seems like encodings are not so hard to understand, right? Next time your text look like a mess in the screen you may know what to do.</p>
 
-<p>Also the next time you have to choose what encoding to use, remmember that the recommendation from the <a href="https://www.ietf.org/rfc/rfc2130.txt">RFC 2130</a> is to use CCS ISO 10646 and encoding UTF-8 as default.</p>
+<p>Also the next time you have to choose what encoding to use, remember that the recommendation from the <a href="https://www.ietf.org/rfc/rfc2130.txt">RFC 2130</a> is to use CCS ISO 10646 and encoding UTF-8 as default.</p>
 
 <h2>References</h2>
 
