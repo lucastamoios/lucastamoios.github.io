@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
+<loc>http://lucastamoios.github.io/blog/2019/06/30/a-basic-guide-about-encodings/</loc>
+<lastmod>2019-06-30T11:25:56-03:00</lastmod>
+</url>
+<url>
 <loc>http://lucastamoios.github.io/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/</loc>
 <lastmod>2019-06-02T12:27:12-03:00</lastmod>
 </url>
@@ -17,9 +21,9 @@
 <lastmod>2017-05-30T09:24:45-03:00</lastmod>
 </url>
 <url>
-<loc>http://lucastamoios.github.io/blog/archives/</loc>
+<loc>http://lucastamoios.github.io/</loc>
 </url>
 <url>
-<loc>http://lucastamoios.github.io/</loc>
+<loc>http://lucastamoios.github.io/blog/archives/</loc>
 </url>
 </urlset>

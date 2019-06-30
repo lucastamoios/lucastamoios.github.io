@@ -1,0 +1,360 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>A Basic Guide About Encodings - Lucas' Blog</title>
+  <meta name="author" content="Lucas A. Aguiar">
+
+  
+  <meta name="description" content="As well said by the Joel Spolsky[1], it is almost unacceptable for a developer to be that reckless and ignore the existence of encodings. I&rsquo;ve &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://lucastamoios.github.io/blog/2019/06/30/a-basic-guide-about-encodings/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Lucas' Blog" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Lucas' Blog</a></h1>
+  
+    <h2>cat /dev/thoughts</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="lucastamoios.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">A Basic Guide About Encodings</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2019-06-30T11:25:56-03:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2019</span></span> <span class='time'>11:25 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>As well said by the Joel Spolsky<sup>[<a href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">1</a>]</sup>, it is almost unacceptable for a developer to be that reckless and ignore the existence of encodings. I&rsquo;ve faced lots of problems with roots in encodings and wasn&rsquo;t aware of that, also, even when I realized the existence of encodings, I was told that it was almost impossible to learn about it. Well, it is very confusing, but I found out that the main reason are the terms and the confusion that a lot of sources make using them.</p>
+
+<p>I will present a basic structure and a few definitions below and then use examples and the most common questions about encodings. Feel free to suggest more questions in the comments.</p>
+
+<h2>A basic structure</h2>
+
+<p>To understand what encodings are, it is necessary to understand the information flow in which the idea of a character turns into a byte (and vice-versa). The RFC 2130<sup>[<a href="https://www.ietf.org/rfc/rfc2130.txt">2</a>]</sup>, defines 3 abstraction levels, here we will put a zeroth level before the others, based on the Unicode Model<sup>[<a href="http://www.unicode.org/reports/tr17/#CharacterEncodingModel">3</a>]</sup>, to improve the understanding:</p>
+
+<ol>
+<li>Abstract Character Repertoire (ACR)</li>
+<li>Coded Character Set (CCS)</li>
+<li>Character Encoding Scheme (CES)</li>
+<li>Transfer Encoding Syntax (TES)</li>
+</ol>
+
+
+<p>The idea of a letter, for example, passes through these 4 layers to turn into a piece of information manageable by a computer. Let&rsquo;s see what each of these layers means and, by the end, illustrate with a few examples.</p>
+
+<h2>Abstract Characters Repertoire</h2>
+
+<p>An abstract character, or shortly, a character, is <em>a minimal unit of text that has semantic value</em><sup>[<a href="https://en.wikipedia.org/wiki/Character_encoding">5</a>]</sup>, thus, an Abstract Characters Repertoire is a set of characters, that will be encoded, like some alphabet or symbol set.</p>
+
+<p>A <code>{</code>, <code>~</code>, <code>ã</code> or <code>a</code> are examples of characters. But as a character is an <em>abstract</em> definition, in other words, the char is not this <code>a</code>, but any representation of this letter with the same meaning, it may happen that the glyphs can be different, in another font, for instance. It is also possible that the apparently the same glyph represent two different characters, like the letter <code>A</code> and the Greek Uppercase alpha <code>Α</code> (check it, they have a different code).</p>
+
+<p>Examples of ACRs are the Unicode/10646 (below we will explain why we treat Unicode and ISO10646 as the same) repertoire and the Western European alphabets and symbols of Latin-1 (CS 00697). We must pay attention that these standards some times have the same name for repertoires and for the character set.</p>
+
+<h2>Coded Character Set</h2>
+
+<p>A Coded Character Set (CCS) is a mapping from a set of abstract characters to a set of integers. Examples of coded character sets are ISO 10646, US-ASCII, and ISO-8859 series.<sup>[<a href="https://www.ietf.org/rfc/rfc2130.txt">2</a>]</sup></p>
+
+<h2>Character Encoding Scheme</h2>
+
+<p>A Character Encoding Scheme (CES) is a mapping from a Coded Character Set or several coded character sets to a set of octets. Examples of Character Encoding Schemes are ISO 2022 and UTF-8. A given CES is typically associated with a single CCS; for example, UTF-8 applies only to ISO 10646.<sup>[<a href="https://www.ietf.org/rfc/rfc2130.txt">2</a>]</sup></p>
+
+<p>The Unicode Model<sup>[<a href="http://www.unicode.org/reports/tr17/#CharacterEncodingModel">3</a>]</sup> defines two different layers within this one, but this post will consider it as only one for simplicity&rsquo;s sake.</p>
+
+<h2>Transfer Encoding Syntax</h2>
+
+<p>It is frequently necessary to transform encoded text into a format which is transmissible by specific protocols. The Transfer Encoding Syntax (TES) is a transformation applied to character data encoded using a CCS and possibly a CES to allow it to be transmitted. Examples of Transfer Encoding Syntaxes are Base64 Encoding, gzip encoding, and so forth.</p>
+
+<h2>Examples</h2>
+
+<p>Suppose we have a character <code>Á</code>, representing the latin letter <code>A</code> with an accent <code>'</code> in it. It belongs to various different Characters Repertoires, for example, the Unicode/10646 and Latin-1 repertoires. Let&rsquo;s use the Unicode/10646.</p>
+
+<p>Looking into the Coded Character Set Table (also called as codepage, Charset Table, etc) we find that the integer that represents it is the U+00C1 (the Unicode Standard puts the U+ before all code points representations). The next step is to convert it into an octet, using the Character Encoding Scheme (also know as encode the string), we can use UTF-8, and have a result like <code>0xc381</code>, UTF-16 and have <code>0xfffec100</code>, or any other Encoding Scheme defined by the chosen CCS. For this example, let&rsquo;s use the UTF-8.</p>
+
+<p>The use of the Transfer Encoding Syntax is commonly related to the transmission form. The HTML may define the TES in the <code>Content-transfer-encoding</code> header<sup>[<a href="https://www.w3.org/Protocols/rfc1341/5_Content-Transfer-Encoding.html">4</a>]</sup>, for instance, as a Base64, and we would have <code>w4E=</code>.</p>
+
+<p>Normally we deal mostly with the ACS, CCS, and CES, calling it the encoding process, and let the TES to be dealt with by the machine.</p>
+
+<p>So we have:</p>
+
+<ol>
+<li>(ABS) Abstract Character <code>Á</code></li>
+<li>(CCS) Code point U+00C1</li>
+<li>(CES) The octet <code>0xc381</code></li>
+<li>(TES) Base64 <code>w4E=</code></li>
+</ol>
+
+
+<p>The decoding just follows the inverse path.</p>
+
+<h2>Some elements that may cause confusion</h2>
+
+<p>The explanation above seems quite simple, so where the confusion lives? I will try to list a few below.</p>
+
+<h3>The charset name in MIME header</h3>
+
+<p>According to the RFC 2130<sup>[<a href="https://www.ietf.org/rfc/rfc2130.txt">2</a>]</sup></p>
+
+<blockquote><p>The term &lsquo;Character Set&rsquo; means many things to many people. Even the MIME registry of character sets registers items that have great differences in semantics and applicability.</p></blockquote>
+
+<p>This causes a lot of confusion, like when you read <code>Content-Type: text/plain; charset=ISO-8859-1</code> in an HTML page, because &ldquo;in MIME, the Coded Character Set and Character Encoding Scheme are specified by the Charset parameter to the Content-Type header field&rdquo;<sup>[<a href="https://www.ietf.org/rfc/rfc2130.txt">2</a>]</sup>.</p>
+
+<h3>What are the other Coded Character Sets? I only know Unicode!</h3>
+
+<p>In the beginning, there were standards like ASCII (the name is the same across all the layers), and others CCS that completed it in terms of languages, like Cyrillic (ISO 8859-5) and Latin1 (ISO 8859-1). The effort to unify it gave birth to the Unicode and later ISO 10646, that wrapped them. There is also another CCS standard used in China called GB18030<sup>[<a href="https://en.wikipedia.org/wiki/GB_18030">9</a>]</sup></p>
+
+<p>The Unicode and the ISO 10646 are now synchronized<sup>[<a href="https://en.wikipedia.org/wiki/Unicode">8</a>]</sup> and the names are almost interchangeable.</p>
+
+<h3>There are CCS inside others CCS? Like Latin1 is inside Unicode?</h3>
+
+<p>Subsetting is a major formal aspect of ISO/IEC 10646. The standard includes a set of internal catalog numbers for named subsets and further makes a distinction between subsets that are fixed collections and those that are open collections, defined by a range of code positions. Open collections are extended any time in addition to the repertoire gets encoded in a code position between the range limits defining the collection. When the last of its open code positions are filled, an open collection automatically becomes a fixed collection.</p>
+
+<h3>And what is &ldquo;plain text&rdquo;?</h3>
+
+<p>The use of the &ldquo;plain text&rdquo; expression is controversial<sup>[<a href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">1</a>]</sup>, but still, it is largely used, and it may be useful to at least try to understand what it should mean.</p>
+
+<p>When the ASCII was firstly implanted, the CCS/CES had 256 possible codepoints but only 128 being used, what left 128 spare positions. So a lot of people had a lot of different ideas with what to do with the spare bits. Western Europe created the Latin1 and others, the Russian created the Cyrillic and almost every other culture made their version. Despite this Babel Tower, almost all the encodings preserved the ASCII characters with the same octets. The newer encodings like UTF-8 also followed this convention.</p>
+
+<p>According to Jukka Korpela<sup>[<a href="http://jkorpela.fi/chars.html">6</a>]</sup></p>
+
+<blockquote><p>ASCII has been used and is used so widely that often the word ASCII refers to &ldquo;text&rdquo; or &ldquo;plain text&rdquo; in general, even if the character code is something else! The words &ldquo;ASCII file&rdquo; quite often mean any text file as opposed to a binary file.</p></blockquote>
+
+<p>However, stay aware that using ASCII characters does not guarantee that your string will be read correctly by anyone.</p>
+
+<h2>Conclusion</h2>
+
+<p>Seems like encodings are not so hard to understand, right? Next time your text look like a mess in the screen you may know what to do.</p>
+
+<p>Also the next time you have to choose what encoding to use, remmember that the recommendation from the <a href="https://www.ietf.org/rfc/rfc2130.txt">RFC 2130</a> is to use CCS ISO 10646 and encoding UTF-8 as default.</p>
+
+<h2>References</h2>
+
+<p>[<a href="https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/">1</a>] The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets (No Excuses!), by Joel Spolsky<br/>
+[<a href="https://www.ietf.org/rfc/rfc2130.txt">2</a>] RFC 2130 - The Report of the IAB Character Set Workshop<br/>
+[<a href="http://www.unicode.org/reports/tr17/#CharacterEncodingModel">3</a>] Unicode Character Encoding Model<br/>
+[<a href="https://www.w3.org/Protocols/rfc1341/5_Content-Transfer-Encoding.html">4</a>] RFC 1341 - The Content-Transfer-Encoding Header Field<br/>
+[<a href="https://en.wikipedia.org/wiki/Character_encoding">5</a>] Wikipedia - Character encoding<br/>
+[<a href="http://jkorpela.fi/chars.html">6</a>] A tutorial on character code issues, by Jukka &ldquo;Yucca&rdquo; Korpela<br/>
+[<a href="https://tools.ietf.org/html/rfc3629">7</a>] RFC 3629 - UTF-8, a transformation format of ISO 10646<br/>
+[<a href="https://en.wikipedia.org/wiki/Unicode">8</a>] Wikipedia - Unicode <br/>
+[<a href="https://en.wikipedia.org/wiki/GB_18030">9</a>] Wikipedia - GB 18030</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Lucas A. Aguiar</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2019-06-30T11:25:56-03:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2019</span></span> <span class='time'>11:25 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://lucastamoios.github.io/blog/2019/06/30/a-basic-guide-about-encodings/" data-via="" data-counturl="http://lucastamoios.github.io/blog/2019/06/30/a-basic-guide-about-encodings/" >Tweet</a>
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/" title="Previous Post: Building a chat from scratch with Go and MQTT">&laquo; Building a chat from scratch with Go and MQTT</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2019/06/30/a-basic-guide-about-encodings/">A Basic Guide About Encodings</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2019/06/02/building-a-chat-from-scratch-with-go-and-mqtt/">Building a Chat From Scratch With Go and MQTT</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2018/03/07/understanding-private-proxies-for-crawling/">Understanding Private Proxies for Crawling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/06/20/gnupg-small-guide/">GnuPG Small Guide</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017/05/30/linux-asynchronous-i-slash-o/">Linux Asynchronous I/O</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/lucastamoios">@lucastamoios</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'lucastamoios',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2019 - Lucas A. Aguiar -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'lucastamoios';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://lucastamoios.github.io/blog/2019/06/30/a-basic-guide-about-encodings/';
+        var disqus_url = 'http://lucastamoios.github.io/blog/2019/06/30/a-basic-guide-about-encodings/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
